@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import smtplib
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -74,33 +75,46 @@ def send_on_sale_email(config: dict, event: dict):
 
 def main(config: dict):
     events = config['events']
+    check_frequency = config['checkFrequency'] # Check frequency in seconds
+    email_frequency = config['emailFrequency'] # Email notification frequency in seconds
     headers = BASE_HEADERS
 
     # Add the bearer token auth header
     headers['Authorization'] = f'Bearer {config["bearerToken"]}'
 
-    # Check availability for all events
-    for event in events:
-        print(f'Checking availability of {event["name"]}...')
+    # Init last notification dict
+    last_notifications = {event['id']: 0 for event in events}
 
-        url = URL % event['id']
+    while True:
+        # Check availability for all events
+        for event in events:
+            print(f'Checking availability of {event["name"]}...')
 
-        response = requests.get(
-            url=url,
-            headers=headers
-        )
+            url = URL % event['id']
 
-        if response.status_code == 200:
-            event = response.json()
-            sale_status = event['saleStatus']
+            response = requests.get(
+                url=url,
+                headers=headers
+            )
 
-            print(f'Event is {SALE_STATUSES[sale_status]}!')
+            if response.status_code == 200:
+                event = response.json()
+                sale_status = event['saleStatus']
 
-            # Send email notification if event available
-            if sale_status == SALE_STATUS_ON_SALE:
-                send_on_sale_email(config['email'], event)
-        else:
-            print(f'ERROR: There was an error with a request to {url}. Request failed with status {response.status_code}: {response.text}')
+                print(f'Event is {SALE_STATUSES[sale_status]}!')
+
+                # Send email notification if event available and last notification was sent before email frequency seconds
+                if sale_status == SALE_STATUS_ON_SALE and time.time() - last_notifications[event['id']] > email_frequency:
+                    # Send notification email
+                    send_on_sale_email(config['email'], event)
+
+                    # Save current time as last notification time for event
+                    last_notifications[event['id']] = time.time()
+            else:
+                print(f'ERROR: There was an error with a request to {url}. Request failed with status {response.status_code}: {response.text}')
+        
+        # Sleep for check frequency seconds
+        time.sleep(check_frequency)
 
 
 if __name__ == '__main__':

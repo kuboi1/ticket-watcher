@@ -1,5 +1,7 @@
 {
     "bearerToken": "token",
+    "checkFrequency": 1800,
+    "emailFrequency": 14400,
     "events": [
         {
             "id": "eventId",
