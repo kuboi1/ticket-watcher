@@ -1,0 +1,18 @@
+{
+    "bearerToken": "token",
+    "events": [
+        {
+            "id": "eventId",
+            "name": "Name of Event",
+            "link": "https://www.example.com/ticket"
+        }
+    ],
+    "email": {
+        "from": "john.doe@example.com",
+        "to": "john.doe@example.com",
+        "smtp": {
+            "user": "john.doe@example.com",
+            "password": "password123"
+        }
+    }
+}
