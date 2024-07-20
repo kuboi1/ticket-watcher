@@ -37,9 +37,13 @@ SALE_STATUSES = {
 }
 
 
+def log(message: str):
+    print(f'[{time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())}] {message}')
+
+
 def load_config() -> dict:
     if not os.path.exists('./config.json'):
-        print('ERROR: Config file does not exist. Create a config.json file based on the config.example.json.')
+        log('ERROR: Config file does not exist. Create a config.json file based on the config.example.json.')
         exit()
 
     with open('./config.json') as config_f:
@@ -66,9 +70,9 @@ def send_on_sale_email(config: dict, event: dict):
 
         server.sendmail(config['from'], config['to'], msg.as_string())
         
-        print(f'Sent a notification email to {config["to"]}')
+        log(f'Sent a notification email to {config["to"]}')
     except Exception as e:
-        print(f'ERROR: Failed to send notification email with error: {e}')
+        log(f'ERROR: Failed to send notification email with error: {e}')
     finally:
         server.quit()
 
@@ -88,7 +92,7 @@ def main(config: dict):
     while True:
         # Check availability for all events
         for event in events:
-            print(f'Checking availability of {event["name"]}...')
+            log(f'Checking availability of {event["name"]}...')
 
             url = URL % event['id']
 
@@ -101,7 +105,7 @@ def main(config: dict):
                 event = response.json()
                 sale_status = event['saleStatus']
 
-                print(f'Event is {SALE_STATUSES[sale_status]}!')
+                log(f'Event is {SALE_STATUSES[sale_status]}!')
 
                 # Send email notification if event available and last notification was sent before email frequency seconds
                 if sale_status == SALE_STATUS_ON_SALE and time.time() - last_notifications[event['id']] > email_frequency:
@@ -111,7 +115,7 @@ def main(config: dict):
                     # Save current time as last notification time for event
                     last_notifications[event['id']] = time.time()
             else:
-                print(f'ERROR: There was an error with a request to {url}. Request failed with status {response.status_code}: {response.text}')
+                log(f'ERROR: There was an error with a request to {url}. Request failed with status {response.status_code}: {response.text}')
         
         # Sleep for check frequency seconds
         time.sleep(check_frequency)
